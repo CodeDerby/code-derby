@@ -1,0 +1,46 @@
+{
+  "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
+  "name": "code-derby",
+  "post": {
+    "dir": "public",
+    "entrypoints": {
+      "default": {
+        "entry": "index.html",
+        "height": "tall"
+      }
+    }
+  },
+  "server": {
+    "entry": "src/server/index.js"
+  },
+  "permissions": {
+    "http": {
+      "enable": true,
+      "domains": [
+        "api.github.com",
+        "oauth.reddit.com"
+      ]
+    },
+    "redis": true
+  },
+  "scheduler": {
+    "tasks": {
+      "daily-settle": {
+        "endpoint": "/internal/cron/settle",
+        "cron": "0 0 * * *"
+      },
+      "weekly-new-round": {
+        "endpoint": "/internal/cron/new-round",
+        "cron": "0 0 * * MON"
+      },
+      "weekly-autopost": {
+        "endpoint": "/internal/cron/weekly-autopost",
+        "cron": "5 0 * * MON"
+      }
+    }
+  },
+  "marketingAssets": {
+    "icon": "public/assets/icon.png",
+    "cover": "public/assets/banner.png"
+  }
+}
