@@ -11,7 +11,7 @@
     }
   },
   "server": {
-    "entry": "src/server/index.js"
+    "entry": "../../src/server/index.js"
   },
   "blocks": {
     "entry": "src/main.jsx"
