@@ -10,6 +10,7 @@
     "start": "LOCAL_SERVER=1 node src/server/index.js"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
   }
 }
