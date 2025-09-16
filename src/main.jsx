@@ -22,9 +22,12 @@ Devvit.addMenuItem({
         </vstack>
       ),
       // Old Reddit fallback:
-      textFallback:
-        'Play Code Derby: draft any 3 GitHub repos and compete weekly. ' +
-        'Open this post in the Reddit mobile app or new web to play.',
+      // 🔧 FIX: must be an object
+      textFallback: {
+        text:
+          'Play Code Derby: draft any 3 GitHub repos and compete weekly. ' +
+          'Open this post in the Reddit mobile app or new web to play.',
+      },
     });
 
     context.ui.navigateTo(post);
