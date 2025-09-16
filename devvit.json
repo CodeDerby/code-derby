@@ -40,7 +40,6 @@
     }
   },
   "marketingAssets": {
-    "icon": "public/assets/icon.png",
-    "cover": "public/assets/banner.png"
+    "icon": "public/assets/icon.png"
   }
 }
