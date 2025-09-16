@@ -10,9 +10,7 @@
     "start": "LOCAL_SERVER=1 node src/server/index.js"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "devvit": "^0.12.0",
-    "express": "^5.1.0"
+    "devvit": "^0.12.0"
   },
   "license": "BSD-3-Clause"
 }

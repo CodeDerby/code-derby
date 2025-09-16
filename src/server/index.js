@@ -1,11 +1,124 @@
 // src/server/index.js
-import express from 'express';
+import { createServer as createNodeServer } from 'node:http';
+import { Buffer } from 'node:buffer';
+import { URL } from 'node:url';
 
-const app = express();
-app.use(express.json());
+const DEFAULT_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+};
 
-import cors from 'cors';
-app.use(cors());
+function createApp() {
+  const routes = [];
+
+  const requestHandler = async (req, res) => {
+    for (const [key, value] of Object.entries(DEFAULT_HEADERS)) {
+      if (!res.headersSent) res.setHeader(key, value);
+    }
+
+    const method = (req.method || 'GET').toUpperCase();
+    if (method === 'OPTIONS') {
+      res.statusCode = 204;
+      return res.end();
+    }
+
+    const expressLikeRes = wrapResponse(res);
+    const url = new URL(req.url || '/', 'http://localhost');
+    req.path = url.pathname;
+    req.query = Object.fromEntries(url.searchParams.entries());
+
+    try {
+      const body = await parseBody(req);
+      if (body !== undefined) req.body = body;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Invalid request payload';
+      return expressLikeRes.status(400).json({ success: false, error: message });
+    }
+
+    const route = routes.find((r) => r.method === method && r.path === url.pathname);
+    if (!route) {
+      return expressLikeRes.status(404).json({ success: false, error: 'Not Found' });
+    }
+
+    try {
+      await route.handler(req, expressLikeRes);
+      if (!res.writableEnded) res.end();
+    } catch (err) {
+      if (res.headersSent) {
+        if (!res.writableEnded) res.end();
+        return;
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      expressLikeRes.status(500).json({ success: false, error: message });
+    }
+  };
+
+  const app = function (req, res) {
+    return requestHandler(req, res);
+  };
+
+  const register = (method, path, handler) => {
+    routes.push({ method, path, handler });
+    return app;
+  };
+
+  app.get = (path, handler) => register('GET', path, handler);
+  app.post = (path, handler) => register('POST', path, handler);
+  app.listen = (...args) => createNodeServer(requestHandler).listen(...args);
+  app.handle = requestHandler;
+
+  return app;
+}
+
+function wrapResponse(res) {
+  if (typeof res.json === 'function') return res;
+  res.status = function status(code) {
+    res.statusCode = code;
+    return res;
+  };
+  res.json = function json(payload) {
+    if (!res.headersSent) res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify(payload));
+    return res;
+  };
+  res.send = function send(payload) {
+    if (payload && typeof payload === 'object' && !Buffer.isBuffer(payload)) {
+      return res.json(payload);
+    }
+    res.end(payload);
+    return res;
+  };
+  return res;
+}
+
+async function parseBody(req) {
+  const method = (req.method || 'GET').toUpperCase();
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) return undefined;
+
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+  }
+
+  if (!chunks.length) return {};
+
+  const raw = Buffer.concat(chunks).toString('utf8');
+  const contentType = req.headers['content-type'] || '';
+
+  if (contentType.includes('application/json')) {
+    if (!raw.trim()) return {};
+    try {
+      return JSON.parse(raw);
+    } catch {
+      throw new Error('Invalid JSON payload');
+    }
+  }
+
+  return raw;
+}
+
+const app = createApp();
 
 // Minimal in-memory Redis shim for local testing
 const memory = (() => {
