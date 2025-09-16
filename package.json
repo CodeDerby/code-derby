@@ -1,6 +1,6 @@
 {
-  "name": "code-derby",
-  "version": "0.6.0",
+  "name": "codederby",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,5 +12,6 @@
   "dependencies": {
     "express": "^4.19.2",
     "cors": "^2.8.5"
-  }
+  },
+  "license": "BSD-3-Clause"
 }

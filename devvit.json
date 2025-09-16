@@ -1,6 +1,6 @@
 {
   "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
-  "name": "code-derby",
+  "name": "codederby",
   "post": {
     "dir": "public",
     "entrypoints": {
@@ -11,7 +11,7 @@
     }
   },
   "server": {
-    "entry": "src/server/index.js"
+    "entry": "../../src/server/index.js"
   },
   "permissions": {
     "http": {
@@ -41,5 +41,8 @@
   },
   "marketingAssets": {
     "icon": "public/assets/icon.png"
+  },
+  "dev": {
+    "subreddit": "codederby_dev"
   }
 }

@@ -1,6 +1,5 @@
 # Code Derby
 
-<!-- Badges -->
 [![CI](https://github.com/CodeDerby/code-derby/actions/workflows/ci.yml/badge.svg)](https://github.com/CodeDerby/code-derby/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
 ![DCO](https://img.shields.io/badge/DCO-required-green)
@@ -14,6 +13,7 @@ Code Derby is a weekly fantasy game inside Reddit. Players draft three repos; we
 ## Table of Contents
 
 - [Code Derby](#code-derby)
+  - [Table of Contents](#table-of-contents)
   - [How to Play (for Players)](#how-to-play-for-players)
   - [Scoring](#scoring)
   - [Anti-Cheat (high-level)](#anti-cheat-high-level)
