@@ -16,3 +16,7 @@ button{padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.2
 button:hover{background:rgba(255,255,255,.1)}
 .links{display:flex;gap:12px;flex-wrap:wrap}
 .links a{color:#cfe0ff}
+.nav{display:flex;gap:8px;flex-wrap:wrap}
+.nav__tab{padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.04);color:#e6eefc;cursor:pointer;font-weight:600}
+.nav__tab:hover{background:rgba(255,255,255,.08)}
+.nav__tab.is-active{background:rgba(79,140,255,.18);border-color:rgba(79,140,255,.45);box-shadow:0 0 0 2px rgba(79,140,255,.12) inset}
