@@ -1,7 +1,7 @@
 {
-  "name": "code-derby",
+  "name": "codederby",
   "displayName": "Code Derby - Fantasy OSS League",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Pick 3 GitHub repositories. Watch them rise. Win the week.",
   "web": {
     "entry": "src/client/index.html",
