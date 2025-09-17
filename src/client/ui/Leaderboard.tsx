@@ -1,6 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import type { LeaderboardPayload, Entry } from '../../shared/types';
 
+function formatWeekRange(isoWeek: string): string {
+  if (!isoWeek) return '—';
+  const start = new Date(`${isoWeek}T00:00:00Z`);
+  if (Number.isNaN(start.getTime())) {
+    return isoWeek;
+  }
+  const end = new Date(start);
+  end.setUTCDate(start.getUTCDate() + 6);
+
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric'
+  });
+
+  return `${fmt.format(start)} – ${fmt.format(end)}`;
+}
+
 export default function Leaderboard() {
   const [rows, setRows] = useState<Entry[]>([]);
   const [week, setWeek] = useState<string>('');
@@ -15,7 +32,7 @@ export default function Leaderboard() {
   return (
     <div>
       <h2 style={{marginTop:0}}>Leaderboard</h2>
-      <div style={{opacity:.7, marginBottom:8}}>Week: {week || '—'}</div>
+      <div style={{opacity:.7, marginBottom:8}}>Week: {formatWeekRange(week)}</div>
       <table className="table">
         <thead><tr><th className="rank">#</th><th>User</th><th>Repos</th><th style={{textAlign:'right'}}>Score</th></tr></thead>
         <tbody>

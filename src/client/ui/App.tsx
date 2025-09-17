@@ -21,33 +21,32 @@ export default function App() {
 
   return (
     <div className="container">
-      <div className="header">
-        <span className="badge">Devvit Web · React</span>
-        <h1 style={{ margin: 0 }}>Code Derby</h1>
-        <div style={{ opacity: 0.6 }}>Fantasy OSS League</div>
+      <div className="hero">
+        <div className="hero-text">
+          <div className="hero-eyebrow">Fantasy OSS League</div>
+          <h1>Code Derby</h1>
+          <p className="hero-copy">Draft three GitHub repos, track their momentum, and win the weekly derby.</p>
+        </div>
+        <div className="hero-promo">
+          <span className="hero-note">Season Beta</span>
+          <span className="hero-note hero-note--secondary">Live leaderboard updates daily</span>
+        </div>
       </div>
 
-      <div className="card" style={{ paddingBottom: 8 }}>
+      <section className="panel panel--tabs">
         <Nav active={view} onChange={setView} />
-      </div>
-
-      {view === 'draft' && (
-        <div className="card">
-          <Draft />
+        <div className="tab-body">
+          {view === 'draft' && <Draft />}
+          {view === 'leaderboard' && <Leaderboard />}
+          {view === 'about' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>About</h2>
+              <p>Scoring: Release +8 - Merged PR +5 - Closed Issue +2 - Star delta +1 (cap) - NPM delta / 5k yields +1.</p>
+              <p>No gambling or cash-out rewards. For fun only.</p>
+            </div>
+          )}
         </div>
-      )}
-      {view === 'leaderboard' && (
-        <div className="card">
-          <Leaderboard />
-        </div>
-      )}
-      {view === 'about' && (
-        <div className="card">
-          <h2 style={{ marginTop: 0 }}>About</h2>
-          <p>Scoring: Release +8 - Merged PR +5 - Closed Issue +2 - Star delta +1 (cap) - NPM delta / 5k yields +1.</p>
-          <p>No gambling or cash-out rewards. For fun only.</p>
-        </div>
-      )}
+      </section>
 
       <Links />
     </div>
