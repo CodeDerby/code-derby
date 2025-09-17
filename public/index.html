@@ -1,148 +1,28 @@
 <!doctype html>
-<html lang="en">
-
+<html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Code Derby</title>
   <style>
-    :root {
-      --bg: #0f172a;
-      --card: #111827;
-      --text: #e5e7eb;
-      --muted: #94a3b8;
-      --primary: #2563eb;
+    :root { --bg:#0f1419; --card:#151c23; --muted:#97a3ae; --fg:#e6edf3; --pri:#2f81f7; }
+    @media (prefers-color-scheme: light) {
+      :root { --bg:#fff; --card:#f6f8fa; --muted:#57606a; --fg:#24292f; --pri:#0969da; }
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      margin: 0;
-      font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    .wrap {
-      max-width: 840px;
-      margin: 24px auto;
-      padding: 0 16px;
-    }
-
-    .nav {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .tab {
-      border: 1px solid #1f2937;
-      padding: 10px 14px;
-      border-radius: 10px;
-      background: #0b1220;
-      cursor: pointer;
-    }
-
-    .tab.active {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid #1f2937;
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-
-    h1 {
-      margin: 0 0 12px;
-      font-size: 22px;
-    }
-
-    h2 {
-      margin: 0 0 8px;
-      font-size: 18px;
-    }
-
-    label {
-      display: block;
-      font-size: 14px;
-      color: var(--muted);
-      margin: 8px 0 6px;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #263244;
-      background: #0b1220;
-      color: var(--text);
-    }
-
-    button {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 10px 14px;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-
-    button[disabled] {
-      opacity: .6;
-      cursor: not-allowed;
-    }
-
-    .row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-    }
-
-    .muted {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    th,
-    td {
-      text-align: left;
-      padding: 8px 6px;
-      border-bottom: 1px solid #1f2937;
-    }
-
-    .ok {
-      color: #22c55e;
-    }
-
-    .warn {
-      color: #f59e0b;
-    }
-
-    .err {
-      color: #ef4444;
-    }
-
-    .flex {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--fg);font:16px system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .wrap{max-width:860px;margin:0 auto;padding:16px}
+    .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;margin-bottom:16px}
+    h1{font-size:24px;margin:0 0 8px}
+    .muted{color:var(--muted)}
+    .row{display:flex;gap:8px}
+    input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid #2a2f36;background:transparent;color:var(--fg)}
+    button{padding:10px 14px;border-radius:10px;border:1px solid #2a2f36;background:var(--pri);color:#fff;cursor:pointer}
+    .list{display:flex;flex-direction:column;gap:6px}
+    .item{display:flex;justify-content:space-between}
+    code{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;}
   </style>
 </head>
-
 <body>
   <div class="wrap">
     <div class="card">
@@ -150,150 +30,71 @@
       <div class="muted" id="meta">Loading…</div>
     </div>
 
-    <div class="nav">
-      <div class="tab active" data-tab="draft">Draft</div>
-      <div class="tab" data-tab="leaderboard">Leaderboard</div>
-      <div class="tab" data-tab="highlights">Highlights</div>
+    <div class="card">
+      <h3>Your roster (3 GitHub repos)</h3>
+      <div class="row">
+        <input id="r1" placeholder="owner/repo" />
+        <input id="r2" placeholder="owner/repo" />
+        <input id="r3" placeholder="owner/repo" />
+        <button id="save">Save</button>
+      </div>
+      <div class="muted" id="saved">—</div>
     </div>
 
-    <section class="card" id="draft">
-      <h2>Pick your 3 repos</h2>
-      <p class="muted">Format: <code>owner/repo</code> (e.g., <code>vercel/next.js</code>). You must submit exactly
-        three.</p>
-      <div class="row">
-        <div><label>Repo 1</label><input id="r1" placeholder="owner/repo" /></div>
-        <div><label>Repo 2</label><input id="r2" placeholder="owner/repo" /></div>
-        <div><label>Repo 3</label><input id="r3" placeholder="owner/repo" /></div>
-      </div>
-      <div class="flex" style="margin-top:12px;">
-        <button id="submit">Submit Draft</button>
-        <span id="dmsg" class="muted"></span>
-      </div>
-    </section>
-
-    <section class="card" id="leaderboard" hidden>
-      <div class="flex" style="justify-content:space-between;">
-        <h2>Leaderboard (weekly)</h2>
-        <button id="refreshBoard">Refresh</button>
-      </div>
-      <table id="board">
-        <thead>
-          <tr>
-            <th>User</th>
-            <th>Score</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <div class="muted">Scores are computed daily from repo deltas (Issues/PRs/Stars/Forks).</div>
-    </section>
-
-    <section class="card" id="highlights" hidden>
-      <div class="flex" style="justify-content:space-between;">
-        <h2>Daily Highlights</h2>
-        <button id="refreshHi">Refresh</button>
-      </div>
-      <div id="hiList" class="muted">No data yet.</div>
-    </section>
+    <div class="card">
+      <h3>Leaderboard (stub)</h3>
+      <div class="list" id="lb"></div>
+      <div class="muted">Scores are placeholders for now; GitHub scoring can be enabled later.</div>
+    </div>
   </div>
 
-  <script>
-    const tabs = document.querySelectorAll('.tab');
-    tabs.forEach(t => t.addEventListener('click', () => {
-      tabs.forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-      document.querySelectorAll('section.card').forEach(s => s.hidden = true);
-      document.getElementById(t.dataset.tab).hidden = false;
-    }));
+<script type="module">
+const $ = (id) => document.getElementById(id);
 
-    async function getJSON(url, opts) {
-      const r = await fetch(url, opts);
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
+async function boot(){
+  try{
+    const u = await (await fetch('/api/user')).json();
+    $('meta').textContent = `Hello ${u.userName} • Week ${u.week} • ${u.today}`;
+    await refresh();
+  }catch(e){
+    $('meta').textContent = 'Failed to load user info. ' + e;
+  }
+}
+
+async function refresh(){
+  try{
+    const lb = await (await fetch('/api/leaderboard')).json();
+    const box = $('lb'); box.innerHTML='';
+    if(!lb.entries?.length){ box.innerHTML='<div class="muted">No entries yet.</div>'; }
+    else{
+      lb.entries.forEach((e, i)=>{
+        const row = document.createElement('div'); row.className='item';
+        row.innerHTML = `<div>${i+1}. u/${e.user}</div><div>${e.score} pts</div>`;
+        box.appendChild(row);
+      });
     }
+  }catch(e){
+    $('lb').innerHTML = '<div class="muted">Failed to load leaderboard.</div>';
+  }
+}
 
-    async function loadMeta() {
-      try {
-        const j = await getJSON('/api/user');
-        document.getElementById('meta').textContent =
-          `You are drafting as “${j.userName}”. Current ISO week: ${j.weekNo}.`;
-      } catch (e) {
-        document.getElementById('meta').textContent = 'Unable to load user info.';
-      }
-    }
+$('save').addEventListener('click', async ()=>{
+  const repos = [ $('r1').value.trim(), $('r2').value.trim(), $('r3').value.trim() ]
+    .filter(Boolean).slice(0,3);
+  try{
+    const r = await fetch('/api/roster/submit', {
+      method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({repos})
+    });
+    const j = await r.json();
+    $('saved').textContent = j.ok ? ('Saved: ' + repos.join('  •  ')) : 'Save failed';
+    await refresh();
+  }catch(e){
+    $('saved').textContent = 'Save failed: ' + e;
+  }
+});
 
-    async function submitDraft() {
-      const r1 = document.getElementById('r1').value.trim();
-      const r2 = document.getElementById('r2').value.trim();
-      const r3 = document.getElementById('r3').value.trim();
-      const msg = document.getElementById('dmsg');
-
-      const valid = s => /^[A-Za-z0-9_.-]+\\/[A - Za - z0 -9_. -] + $ /.test(s);
-      if (![r1, r2, r3].every(valid)) {
-        msg.textContent = 'Please enter three repos in “owner/repo” format.';
-        msg.className = 'err';
-        return;
-      }
-      document.getElementById('submit').disabled = true;
-      msg.textContent = 'Submitting…'; msg.className = 'muted';
-
-      try {
-        const j = await getJSON('/api/roster/submit', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ repos: [r1, r2, r3] })
-        });
-        if (j.success) { msg.textContent = 'Draft submitted!'; msg.className = 'ok'; }
-        else { msg.textContent = 'Not accepted: ' + (j.error || 'unknown'); msg.className = 'err'; }
-      } catch (e) {
-        msg.textContent = 'Error submitting draft.'; msg.className = 'err';
-      } finally {
-        document.getElementById('submit').disabled = false;
-      }
-    }
-
-    async function loadBoard() {
-      try {
-        const j = await getJSON('/api/leaderboard');
-        const entries = Object.entries(j.leaderboard || {}).sort((a, b) => b[1] - a[1]).slice(0, 50);
-        const tbody = document.querySelector('#board tbody'); tbody.innerHTML = '';
-        if (entries.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="2" class="muted">No scores yet. Check back after daily settlement.</td></tr>';
-          return;
-        }
-        for (const [u, score] of entries) {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${u}</td><td>${score}</td>`;
-          tbody.appendChild(tr);
-        }
-      } catch {
-        document.querySelector('#board tbody').innerHTML =
-          '<tr><td colspan="2" class="err">Failed to load leaderboard.</td></tr>';
-      }
-    }
-
-    async function loadHighlights() {
-      try {
-        const j = await getJSON('/api/highlights');
-        const hi = j.highlights;
-        const box = document.getElementById('hiList');
-        if (!hi || !hi.topRepos || hi.topRepos.length === 0) {
-          box.textContent = 'No highlights yet.';
-          return;
-        }
-        const rows = hi.topRepos.map((r, i) => `${i + 1}. ${r.repo} (+${r.delta})${r.risk >= 40 ? ' ⚠️' : ''}`);
-        box.textContent = `${hi.dateUTC}:\\n` + rows.join('\\n');
-      } catch {
-        document.getElementById('hiList').textContent = 'Failed to load highlights.';
-      }
-    }
-
-    document.getElementById('submit').addEventListener('click', submitDraft);
-    document.getElementById('refreshBoard').addEventListener('click', loadBoard);
-    document.getElementById('refreshHi').addEventListener('click', loadHighlights);
-
-    loadMeta(); loadBoard(); loadHighlights();
-  </script>
+boot();
+</script>
 </body>
-
 </html>

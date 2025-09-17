@@ -1,58 +1,18 @@
 {
-  "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
-  "name": "codederby",
-  "post": {
-    "dir": "public",
-    "entrypoints": {
-      "default": {
-        "entry": "index.html",
-        "height": "tall"
-      }
-    }
+  "name": "code-derby",
+  "displayName": "Code Derby - Fantasy OSS League",
+  "version": "0.2.0",
+  "description": "Pick 3 GitHub repositories. Watch them rise. Win the week.",
+  "web": {
+    "entry": "src/client/index.html",
+    "domainAllowlist": [
+      "api.github.com"
+    ]
   },
   "server": {
-    "entry": "../../src/server/index.js"
-  },
-  "blocks": {
-    "entry": "src/main.jsx"
-  },
-  "permissions": {
-    "http": {
-      "enable": true,
-      "domains": [
-        "api.github.com",
-        "oauth.reddit.com"
-      ]
-    },
-    "redis": true,
-    "reddit": {
-      "enable": true,
-      "scope": "user",
-      "asUser": [
-        "SUBMIT_POST"
-      ]
-    }
-  },
-  "scheduler": {
-    "tasks": {
-      "daily-settle": {
-        "endpoint": "/internal/cron/settle",
-        "cron": "0 0 * * *"
-      },
-      "weekly-new-round": {
-        "endpoint": "/internal/cron/new-round",
-        "cron": "0 0 * * MON"
-      },
-      "weekly-autopost": {
-        "endpoint": "/internal/cron/weekly-autopost",
-        "cron": "5 0 * * MON"
-      }
-    }
+    "entry": "src/server/index.ts"
   },
   "marketingAssets": {
-    "icon": "public/assets/icon.png"
-  },
-  "dev": {
-    "subreddit": "codederby_dev"
+    "icon": "assets/icon.png"
   }
 }

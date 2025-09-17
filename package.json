@@ -1,17 +1,25 @@
 {
-  "name": "codederby",
-  "version": "0.0.0",
+  "name": "code-derby",
   "private": true,
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
-    "dev": "devvit playtest",
-    "upload": "devvit upload",
-    "publish": "devvit publish",
-    "start": "LOCAL_SERVER=1 node src/server/index.js"
+    "dev": "devvit dev",
+    "build": "devvit build",
+    "deploy": "devvit upload",
+    "launch": "devvit publish",
+    "login": "devvit login",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@devvit/public-api": "^0.12.0",
-    "devvit": "^0.12.0"
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
-  "license": "BSD-3-Clause"
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.30",
+    "typescript": "^5.6.3"
+  }
 }
