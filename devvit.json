@@ -10,7 +10,7 @@
     ]
   },
   "post": {
-    "dir": "dist",
+    "dir": "src/client/dist",
     "entrypoints": {
       "default": {
         "entry": "index.html",
