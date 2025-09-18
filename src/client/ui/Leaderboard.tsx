@@ -16,9 +16,12 @@ export default function Leaderboard({
   return (
     <div>
       <h2 style={{ marginTop: 0 }}>Leaderboard</h2>
-      <div style={{ opacity: 0.8, marginBottom: 8 }}>
-        Week: {formatWeek(week)} • Updated: {formatUpdated(updatedAt)}
+      <div className="lb-meta">
+        <span className="lb-week">Week: {formatWeek(week)}</span>
+        <span className="dot">•</span>
+        <span className="lb-updated">Updated: {formatUpdated(updatedAt)}</span>
       </div>
+
 
       <table className="table lb-table">
         <colgroup>
@@ -72,7 +75,7 @@ export default function Leaderboard({
 function formatWeek(weekISO: string) {
   const start = new Date(`${weekISO}T00:00:00Z`);
   const end = new Date(start); end.setUTCDate(start.getUTCDate() + 6);
-  return `${fmt(start)} – ${fmt(end)}`;
+  return `${fmt(start)} \u2013 ${fmt(end)}`;
 }
 function fmt(d: Date) {
   return d.toLocaleString('en-US', { month: 'short', day: '2-digit', timeZone: 'UTC' });

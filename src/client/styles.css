@@ -465,3 +465,40 @@ button:hover {
     transform: none
   }
 }
+
+/* Leaderboard links: 高對比、微底線 */
+.lb-table a {
+  color: #cfe8ff;
+  /* 淡藍、高對比 */
+  text-decoration: underline;
+  text-decoration-color: rgba(207, 232, 255, .45);
+}
+
+.lb-table a:hover {
+  text-decoration-color: rgba(207, 232, 255, .9);
+}
+
+/* Week / Updated 排版：桌面同行、手機換行並移除點號 */
+.lb-meta {
+  opacity: .8;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+@media (max-width:640px) {
+  .lb-meta {
+    display: block;
+  }
+
+  .lb-meta .dot {
+    display: none;
+  }
+
+  .lb-meta .lb-updated {
+    display: block;
+    margin-top: 2px;
+  }
+}
