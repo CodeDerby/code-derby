@@ -1,4 +1,4 @@
-# Code Derby
+# Code Derby — a Fantasy OSS League on Reddit (Devvit Web + React)
 
 [![CI](https://github.com/CodeDerby/code-derby/actions/workflows/ci.yml/badge.svg)](https://github.com/CodeDerby/code-derby/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
@@ -8,227 +8,154 @@
 
 **Pick 3 GitHub repositories. Watch them rise. Win the week.**
 
-Code Derby is a weekly fantasy game on Reddit. Players draft **three** repos; we tally **daily deltas** from repo activity (Issues / PRs / Stars / Forks). Anti-cheat keeps it fair. Leaderboards and weekly drafts keep it fun.
+Code Derby is a weekly, social game that runs *inside a Reddit post* via **Devvit Web**. Players draft three GitHub repositories (`owner/repo`). Each week (UTC Monday → Sunday) real project momentum is turned into points and a live leaderboard.
 
-> This repo is a **Devvit Web** app (interactive post + Express server).  
-> If you’re a moderator, you can install it in your subreddit and start a weekly league.
+## Quick links
 
-## Table of Contents
+- **App listing:** `https://developers.reddit.com/apps/codederby`
+- **Demo post:** `https://www.reddit.com/r/codederby_dev/comments/1nj89dz/code_derby`
+- **Developers:** `u/Sofus_Deng`
 
-- [Code Derby](#code-derby)
-  - [Table of Contents](#table-of-contents)
-  - [How to Play (for Players)](#how-to-play-for-players)
-  - [Scoring](#scoring)
-  - [Anti-Cheat (high-level)](#anti-cheat-high-level)
-  - [Install in Your Subreddit (for Moderators)](#install-in-your-subreddit-for-moderators)
-  - [Playtest → Publish → Install](#playtest--publish--install)
-  - [Weekly Auto-Post (optional)](#weekly-auto-post-optional)
-  - [Local Development](#local-development)
-  - [API](#api)
-  - [Repository Layout](#repository-layout)
-  - [License \& Contributing](#license--contributing)
-  - [Support \& Security](#support--security)
-  - [Troubleshooting](#troubleshooting)
-  - [Known issues](#known-issues)
+## How to play
 
-## How to Play (for Players)
+1. Open the **demo Reddit post** (desktop web or the official app on mobile).  
+2. Go to **Draft**, enter **three** repos in `owner/repo` format, and submit.  
+3. The app shows a toast and switches to **Leaderboard**. Your entry appears instantly.  
+4. The leaderboard updates during the week and shows the UTC **week range**.  
+5. In **About → Health** you can see server status (mock/real), current week, and entry count.
 
-1. Open the weekly **Code Derby** post in your subreddit.
-2. Click **Launch App** (interactive post).
-3. In **Draft**, enter three repos in `owner/repo` format (e.g., `vercel/next.js`) and **Submit**.
-4. Check the **Leaderboard** during the week; scores refresh after each daily settlement.
+## Scoring rules
 
-**Draft deadline:** Sunday 23:00 UTC  
-**New round:** Monday 00:00 UTC
+### Season Beta (current, shipped)
 
-## Scoring
+We ship with a deterministic **Mock Scoring** mode so the app is fully reviewable while domain allowlists for GitHub/npm are pending.
 
-We compute per-repo **daily deltas** from the previous snapshot and apply weights:
+- **Release**: +8  
+- **Merged PR**: +5  
+- **Closed Issue**: +2  
+- **Star Δ**: +1 per star gained (cap **20** / repo / week)  
+- **NPM Δ / 5k**: +1 per 5,000 downloads gained
 
-- Issues and PRs (weighted), Stars (×1), Forks (×2).
-- Your three repos’ deltas are summed and added to your weekly score.
-- Suspicious spikes can be delayed or down-weighted by anti-cheat.
+Mock mode uses reproducible values based on `repo + week`, so demos are stable and comparable.
 
-> Note: the open-source starter wires the UI, storage, and endpoints.  
-> Detailed GitHub metrics/weights can be enabled in cloud mode.
+### Full / Real mode (after allowlist approval)
 
-## Anti-Cheat (high-level)
+- GitHub: Releases, merged PRs, closed issues, star delta (with weekly baselines retained for **21 days**).
+- npm: weekly download delta (smoothed; +1 per 5,000).  
+- Redis-backed caches for fast reads and rate‑limit safety.
 
-Signals we consider:
+**Fair-play note:** No gambling or redeemable prizes. Anti‑gaming heuristics (rate limits, duplicate checks) on the roadmap.
 
-- Star spikes vs trailing baseline; temporal clustering of events  
-- Fork anomalies (lots of forks with little PR activity)  
-- Account freshness among actors; churny issue/PR bursts
+## Screens & UX details
 
-Actions:
+- **Draft**: empty inputs with placeholders; `Enter` submits; on success we **clear inputs**, show a **toast**, and switch to **Leaderboard**.
+- **Leaderboard**: clearly labeled UTC week (Mon–Sun); empty state nudges to “Go to Draft”; auto-refresh every ~20s (and on tab switch).
+- **About**: rules + **Health** panel with a one-click *Refresh* (shows `{ ok, week, mockScoring, entries }`).
+- **Design**: modern tech style—gradient hero, text tabs, glass buttons, accessible contrast, mobile-first with smooth fallbacks.
 
-- **Delay**: exclude a repo for the day pending review  
-- **Down-weight**: scale suspicious deltas (e.g., 0.5×)  
-- **Quarantine**: exclude for the round with moderator review
+## Tech stack
 
-We publish high-level criteria; parameters may evolve across releases.
+- **Devvit Web** (WebView + server runtime)
+- **Frontend**: React + TypeScript, Vite, custom CSS (dark/tech theme)
+- **Server**: Express on Devvit Web Server
+- **Storage**: Devvit **Redis** (weekly entries, baselines, short‑lived metrics caches)
 
-## Install in Your Subreddit (for Moderators)
-
-You must be a moderator of the target subreddit.
+## Repository structure
 
 ```bash
-npm i -g @devvit/cli
-devvit login
-
-# From this repo’s root:
-devvit upload
-devvit playtest <your_test_subreddit>    # e.g. codederby_dev
-
-# In the subreddit:
-# Create post → Launch App → pick “Code Derby”
-# Verify the interactive post renders.
-
-# When ready:
-devvit publish                           # unlisted is fine first
-devvit install <your_production_subreddit>
+src/
+├─ client/                 # React app (WebView UI)
+│  ├─ ui/
+│  │  ├─ App.tsx
+│  │  ├─ Draft.tsx
+│  │  ├─ Leaderboard.tsx
+│  │  └─ About.tsx
+│  └─ styles.css           # custom theme
+├─ server/                 # Express routes served by Devvit Web
+│  └─ index.ts
+└─ shared/                 # Shared types between client/server
+   └─ types.ts
 ```
-
-## Playtest → Publish → Install
-
-- **Playtest** in a staging subreddit (e.g., `r/CodeDerbyBeta`).  
-- **Publish** as unlisted for early trials; make public later.  
-- **Install** into production (e.g., `r/CodeDerby`).
-
-## Weekly Auto-Post (optional)
-
-The server can post a weekly **Draft** thread at **Monday 00:05 UTC**.
-
-```ini
-AUTOPUBLISH_ENABLED=true
-AUTOPUBLISH_SUBREDDIT=<your_subreddit>
-# optional fallback when running outside Devvit:
-# AUTOPUBLISH_FORCE_OAUTH=1  + Reddit OAuth vars (see .env.sample)
-```
-
-## Local Development
-
-```bash
-npm install
-npm run start      # LOCAL_SERVER=1 node (see package.json)
-# Smoke tests:
-curl -s http://localhost:3000/api/user
-curl -s -X POST http://localhost:3000/api/roster/submit   -H 'content-type: application/json'   -d '{"repos":["vercel/next.js","facebook/react","angular/angular"]}'
-curl -s http://localhost:3000/api/leaderboard
-```
-
-> If you see “Launch App” missing in old Reddit, open in **new.reddit.com** or the **mobile app**.
 
 ## API
 
-All endpoints are mounted by the embedded Express server.
+All routes are served by the Devvit Web server.
 
-- `GET /api/user` → `{ userName, week, today }`  
-- `POST /api/roster/submit` `{ repos: string[] }` → `{ ok: true }`  
-- `GET /api/leaderboard` → `{ week, entries: Array<{ user, score }> }`
+- `GET /api/user` → `{ user: string }`
+- `POST /api/roster/submit`  
+  **body:** `{ repos: string[3] }` (`owner/repo` each)  
+  **returns:** `{ ok: true, user: string }`
+- `GET /api/leaderboard` →
 
-Cron stubs (wired for cloud or local testing):
+  ```json
+  {
+    "updatedAt": "2025-09-15T10:00:00Z",
+    "week": "2025-09-15",
+    "weekStart": "2025-09-15",
+    "weekEnd": "2025-09-21",
+    "entries": [
+      { "user": "Sofus_Deng", "repos": ["vercel/next.js","facebook/react","angular/angular"], "score": 0 }
+    ]
+  }
+  ```
 
-- `POST /internal/cron/settle`  
-- `POST /internal/cron/new-round`  
-- `POST /internal/cron/weekly-autopost`
+- `GET /api/health` → `{ ok: boolean, week: string, entries: number, mockScoring: boolean }`
+- (diagnostic) `GET /api/gh/stars?repo=owner/repo` → `{ stars: number }` (real mode)
+- All leaderboard responses set `Cache-Control: no-store` to avoid stale data in WebView caches.
 
-## Repository Layout
+## Settings & environment
 
-```
-public/            WebView UI (interactive post)
-  └─ index.html
-src/server/        Express API + cron stubs
-  └─ index.ts      (or index.js if you prefer JavaScript)
-devvit.json        Devvit config (entrypoints, permissions)
-```
+Both **Devvit Settings** and `.env` are supported.
 
-## License & Contributing
+- **Mock Scoring (default ON)**
+  - Devvit Settings: `mockScoring = "true" | "false"`
+  - `.env`:
 
-- **License:** AGPL-3.0 (see `LICENSE`)  
-- **Contributing:** DCO — sign every commit using `git commit -s`  
-- **Code of Conduct:** Contributor Covenant v2.1
+    ```bash
+    MOCK_SCORING=1   # 1/true to enable, 0/false to disable
+    ```
 
-## Support & Security
+- **GitHub Token** (used in *Real* mode)
+  - Devvit Settings:
 
-Open an Issue or start a Discussion.  
-Security reports → see `SECURITY.md`.
+    ```bash
+    npx devvit settings set githubToken
+    ```
+
+  - or `.env`:
+
+    ```bash
+    GITHUB_TOKEN=ghp_xxx...
+    ```
+
+> Ensure `devvit.json` includes:
+>
+> ```json
+> "settings": {
+>   "global": {
+>     "githubToken": { "type": "string", "label": "GitHub Token", "isSecret": true, "defaultValue": "" },
+>     "mockScoring": { "type": "string", "label": "Mock Scoring (true/false)", "isSecret": false, "defaultValue": "true" }
+>   }
+> }
+> ```
 
 ---
 
-## Troubleshooting
+## Getting started (local / playtest)
 
-**Interactive post shows “Server error”**  
-- Confirm the server is running in Devvit Cloud (it is when you `devvit upload` / `playtest`).  
-- Check logs:
-  ```bash
-  devvit logs <your_test_subreddit>
-  ```
-- Smoke-test the endpoints:
-  ```bash
-  curl -s https://<your-cloud-host>/api/user
-  curl -s https://<your-cloud-host>/api/leaderboard
-  ```
-  (When running locally: use `http://localhost:3000/...`)
+```bash
+npm install
+npm run dev     # concurrently builds client + server and deploys to Devvit playtest
+```
 
-**No “Launch App” in the post composer**  
-- Use **new.reddit.com** or the **mobile app**. Old Reddit does not expose the Devvit Web “Launch App” surface.  
-- Ensure `devvit.json` contains the WebView entry:
-  ```json
-  "post": { "dir": "public", "entrypoints": { "default": { "entry": "index.html", "height": "tall" } } }
-  ```
+Then open your test subreddit and refresh the post (or use the UI simulator) to see changes.
 
-**`Error: Your devvit.json references files that don't exist: config.server (dist/server/...)`**  
-- You’re mixing build artefacts. Fix the **server entry** and clean state:
-  ```json
-  "server": { "entry": "src/server/index.ts" }   // or index.js if you use JS
-  ```
-  Then:
-  ```bash
-  rm -rf .devvit .devvit-state dist
-  npm install
-  devvit upload && devvit playtest <subreddit>
-  ```
+**Notes**
 
-**`Cannot find package 'express' imported from /srv/main.js`**  
-- Ensure **dependencies** (not devDependencies) include Express and CORS:
-  ```json
-  "dependencies": { "express": "^5.1.0", "cors": "^2.8.5" }
-  ```
-  Re-upload afterwards.
+- Requires **New Reddit** (and the official mobile app). Old Reddit does not render interactive posts.
+- External domains (e.g., `api.github.com`, `registry.npmjs.org`) need allowlist approval in the Dev Portal. Use **Mock Scoring** until approved.
 
-**`Cannot use 'in' operator to search for 'text'` during playtest**  
-- This typically occurs when trying to render on old web; open the post on **new.reddit.com** or the **mobile app**.
+## License & contributing
 
-**`marketingAssets is not allowed to have the additional property 'cover'`**  
-- Only `icon` is supported today:
-  ```json
-  "marketingAssets": { "icon": "public/assets/icon.png" }
-  ```
-
-**Auto-post didn’t run on Monday**  
-- Cron triggers in cloud; verify env:
-  ```ini
-  AUTOPUBLISH_ENABLED=true
-  AUTOPUBLISH_SUBREDDIT=<your_subreddit>
-  ```
-- Manually trigger to test:
-  ```bash
-  curl -X POST https://<your-cloud-host>/internal/cron/weekly-autopost
-  ```
-
-**UI updated but subreddit still shows the old version**  
-- Devvit assets can be cached. Do a **hard refresh** or reinstall the playtest version:
-  ```bash
-  devvit playtest <subreddit>
-  ```
-
-## Known issues
-
-- **New Reddit required**: Interactive posts render on new Reddit and the mobile app. Old Reddit lacks this surface.
-- **Domain exceptions**: Calls to non-whitelisted domains require approval in the Dev Portal. Until approved, those calls may fail.
-- **Private subreddits**: Non-mods in a private subreddit can’t see/play drafts; this is expected. Test with a public or staged sub.
-- **GitHub API limits**: Without tokens or elevated rate limits, advanced scoring can be throttled. Starter uses local/in-memory scoring stubs (zeros) unless configured.
-- **Cron in playtest**: Time-based triggers in playtest environments can be paused or delayed. Use manual POSTs during testing.
-- **Strict height**: The interactive post has finite height (`"tall"`). Very long content will scroll inside the WebView.
-- **Third-party cookie / content blockers**: Some browser extensions can block embedded auth flows; try an incognito window or disable blockers.
+- License: **AGPL‑3.0** (see `LICENSE`)
+- Contributions welcome! See `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `SUPPORT.md`.
