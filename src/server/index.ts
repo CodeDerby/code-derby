@@ -256,15 +256,25 @@ app.post('/internal/menu/post-create', async (_req, res) => {
   }
 });
 
-// health check for WebView (proxy-safe)
+// health check for WebView (no ping() in Devvit Redis SDK)
 app.get('/api/health', async (_req, res) => {
   try {
     const week = currentWeekISO();
-    const pong = await redis.ping();
-    const entries = await redis.hLen(leaderboardKey(week));
-    res.json({ ok: true, pong, week, entries });
+    const key = leaderboardKey(week);
+
+    // 1) 讀目前週的筆數（若 key 不存在會回 0）
+    const entries = await redis.hLen(key);
+
+    // 2) 寫入一個臨時 probe（代表可寫）
+    const probeKey = `code-derby:health:${Date.now()}`;
+    await redis.hSet(probeKey, 'ok', '1');
+    await redis.expire(probeKey, 60); // 60s 自毀
+
+    res.json({ ok: true, week, entries });
   } catch (error) {
-    res.status(500).json({ ok: false, error: error instanceof Error ? error.message : String(error) });
+    res
+      .status(500)
+      .json({ ok: false, error: error instanceof Error ? error.message : String(error) });
   }
 });
 

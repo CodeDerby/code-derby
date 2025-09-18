@@ -8,8 +8,7 @@ import type { Entry, LeaderboardPayload } from '../../shared/types';
 
 function getHashView(): ViewKey {
   const h = (window.location.hash || '').replace('#', '').toLowerCase();
-  if (h === 'draft' || h === 'leaderboard' || h === 'about') return h as ViewKey;
-  return 'leaderboard';
+  return (h === 'draft' || h === 'leaderboard' || h === 'about') ? (h as ViewKey) : 'leaderboard';
 }
 
 function sortEntries(entries: Entry[]): Entry[] {
@@ -18,47 +17,41 @@ function sortEntries(entries: Entry[]): Entry[] {
 
 export default function App() {
   const [view, setView] = useState<ViewKey>(getHashView());
-  const [leaderboardWeek, setLeaderboardWeek] = useState('');
-  const [leaderboardRows, setLeaderboardRows] = useState<Entry[]>([]);
-  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [week, setWeek] = useState('');
+  const [rows, setRows] = useState<Entry[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const loadLeaderboard = useCallback(async () => {
-    setLoadingLeaderboard(true);
+    setLoading(true);
     try {
-      const payload: LeaderboardPayload = await fetch('/api/leaderboard').then((r) => r.json());
-      setLeaderboardWeek(payload.week);
-      setLeaderboardRows(sortEntries(payload.entries || []));
-    } catch (error) {
-      console.error('Failed to load leaderboard', error);
+      const r = await fetch('/api/leaderboard');
+      const d: LeaderboardPayload = await r.json();
+      setWeek(d.week || '');
+      setRows(sortEntries(d.entries || []));
+    } catch (e) {
+      console.error('failed to load leaderboard', e);
     } finally {
-      setLoadingLeaderboard(false);
+      setLoading(false);
     }
   }, []);
 
-  // 初始載入
   useEffect(() => {
     void loadLeaderboard();
-  }, [loadLeaderboard]);
-
-  // 切到 leaderboard 分頁時強制重載
-  useEffect(() => {
-    if (view === 'leaderboard') {
-      void loadLeaderboard();
-    }
-  }, [view, loadLeaderboard]);
-
-  // 監聽 hash 變化（重新整理後還能回到原分頁）
-  useEffect(() => {
     const onHash = () => setView(getHashView());
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
-  }, []);
+  }, [loadLeaderboard]);
 
-  // Draft 送出：先本地更新 → 重新抓 → 自動跳排行榜並更新 hash
+  // 切到排行榜時強制 refresh
+  useEffect(() => {
+    if (view === 'leaderboard') void loadLeaderboard();
+  }, [view, loadLeaderboard]);
+
+  // Draft 送出後：樂觀更新 + 轉到排行榜
   const handleRosterSubmit = useCallback(
     async (entry: Entry) => {
-      setLeaderboardRows((prev) => {
-        const next = prev.filter((row) => row.user !== entry.user);
+      setRows((prev) => {
+        const next = prev.filter((r) => r.user !== entry.user);
         next.push(entry);
         return sortEntries(next);
       });
@@ -69,21 +62,21 @@ export default function App() {
     [loadLeaderboard]
   );
 
-  const tabPanels = useMemo(
+  const panels = useMemo(
     () => ({
       draft: <Draft onSubmit={handleRosterSubmit} />,
-      leaderboard: <Leaderboard week={leaderboardWeek} rows={leaderboardRows} />,
+      leaderboard: loading && rows.length === 0
+        ? <div style={{opacity:.7}}>Loading leaderboard…</div>
+        : <Leaderboard week={week} rows={rows} />,
       about: (
         <div>
-          <h2 style={{ marginTop: 0 }}>About</h2>
-          <p>
-            Scoring: Release +8 · Merged PR +5 · Closed Issue +2 · Star Δ +1 (cap) · NPM Δ / 5k → +1.
-          </p>
-          <p>No gambling or cash-out rewards. For fun only.</p>
+          <h2 style={{marginTop:0}}>About</h2>
+          <p>Scoring: Release +8 · Merged PR +5 · Closed Issue +2 · Star Δ +1 (cap) · NPM Δ / 5k → +1.</p>
+          <p>For fun only. No gambling or redeemable prizes.</p>
         </div>
       ),
     }),
-    [leaderboardWeek, leaderboardRows, handleRosterSubmit]
+    [handleRosterSubmit, loading, rows, week]
   );
 
   return (
@@ -107,20 +100,14 @@ export default function App() {
           active={view}
           onChange={(v) => {
             setView(v);
-            window.location.hash = v; // 讓重新整理後仍留在同一分頁
+            window.location.hash = v;
           }}
         />
-        <div className="tab-body">
-          <div className={`tab-panel${view === 'draft' ? ' is-active' : ''}`}>{tabPanels.draft}</div>
-          <div className={`tab-panel${view === 'leaderboard' ? ' is-active' : ''}`}>
-            {loadingLeaderboard && leaderboardRows.length === 0 ? (
-              <div style={{ opacity: 0.7 }}>Loading leaderboard…</div>
-            ) : (
-              tabPanels.leaderboard
-            )}
-          </div>
-          <div className={`tab-panel${view === 'about' ? ' is-active' : ''}`}>{tabPanels.about}</div>
-        </div>
+
+        {/* 一次只顯示一個，使用原生 hidden 確保不受樣式影響 */}
+        <div className="card" hidden={view !== 'draft'}>{panels.draft}</div>
+        <div className="card" hidden={view !== 'leaderboard'}>{panels.leaderboard}</div>
+        <div className="card" hidden={view !== 'about'}>{panels.about}</div>
       </section>
 
       <Links />
