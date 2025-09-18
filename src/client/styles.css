@@ -58,9 +58,14 @@ body{
 }
 .panel--tabs{padding:18px 22px;display:flex;flex-direction:column;gap:14px}
 .tab-body{margin-top:0}
-.table{width:100%;border-collapse:collapse}
+.table{width:100%;border-collapse:collapse;table-layout:fixed}
 .table th,.table td{padding:12px 10px;border-bottom:1px solid rgba(148,165,255,.12);text-align:left}
 .table th{color:var(--text-muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.table th:nth-child(1),.table td:nth-child(1){width:48px}
+.table th:nth-child(2),.table td:nth-child(2){width:26%}
+.repo-cell{vertical-align:top}
+.repo-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+.repo-list li{font-size:14px;color:var(--text-primary);word-break:break-word;line-height:1.4}
 .rank{width:56px;text-align:center;font-weight:700}
 .score{font-weight:800}
 label{display:block;margin-bottom:6px;color:var(--text-muted);font-weight:600}
@@ -88,4 +93,5 @@ button:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(10,18,40,.35
   .panel--tabs{padding:16px 18px;gap:12px}
   .nav{gap:18px;padding-bottom:4px;overflow:visible;flex-wrap:wrap}
   .nav__tab{font-size:13px}
+  .repo-list li{font-size:13px}
 }

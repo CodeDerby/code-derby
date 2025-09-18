@@ -8,7 +8,9 @@ export interface Entry {
 }
 
 export interface LeaderboardPayload {
-  week: string;
+  week: string;         // ISO date (UTC Monday)
+  weekStart?: string;   // optional explicit start ISO (UTC)
+  weekEnd?: string;     // optional explicit end ISO (UTC)
   entries: Entry[];
 }
 
