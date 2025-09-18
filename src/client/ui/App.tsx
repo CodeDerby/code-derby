@@ -11,6 +11,13 @@ export default function App() {
   const [view, setView] = useState<ViewKey>('leaderboard');
   const [lb, setLb] = useState<LeaderboardPayload | null>(null);
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const popToast = useCallback((msg: string) => {
+    setToast(msg);
+    // 2.2s 後自動消失
+    window.clearTimeout((popToast as any)._t);
+    (popToast as any)._t = window.setTimeout(() => setToast(null), 2200);
+  }, []);
 
   const refreshLeaderboard = useCallback(async () => {
     try {
@@ -41,6 +48,7 @@ export default function App() {
         throw new Error(data?.error || `submit failed (${res.status})`);
       }
       await refreshLeaderboard();
+      popToast('Submitted! ✅');
       setView('leaderboard');
       requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
     } catch (e) {
@@ -108,6 +116,8 @@ export default function App() {
           {view === 'about' && <About />}
         </div>
       </div>
+
+      {toast && <div className="cd-toast">{toast}</div>}
 
       {/* Footer links */}
       <div className="footer-links">

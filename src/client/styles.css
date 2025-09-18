@@ -843,3 +843,69 @@ input::placeholder {
   justify-content: center;
   padding: 16px 0 8px;
 }
+
+/* ==== Code Derby refinements ==== */
+
+/* 1) Hero – 讓 LIVE 換到第二行 */
+.card.hero .meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.card.hero .meta-row .muted {
+  display: block;
+  /* 強制換行 */
+  flex-basis: 100%;
+  margin-top: 4px;
+  letter-spacing: .02em;
+}
+
+/* 2) Toast 外觀（右下角） */
+.cd-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 9999;
+  background: rgba(12, 18, 34, .9);
+  color: #e6fbff;
+  border: 1px solid rgba(140, 236, 255, .25);
+  border-radius: 12px;
+  padding: .6rem .9rem;
+  box-shadow:
+    0 6px 28px rgba(9, 198, 249, .18),
+    inset 0 0 0 1px rgba(255, 255, 255, .04);
+  backdrop-filter: blur(6px);
+}
+
+/* 3) Health – Refresh 像按鈕、無底線、留距 */
+.health button.link {
+  text-decoration: none;
+  /* 移除底線 */
+  margin-bottom: 10px;
+  /* 與下方資訊留距 */
+  background: linear-gradient(145deg, #243049, #1a2237);
+  color: #eaf9ff;
+  font-weight: 800;
+  border: 1px solid rgba(140, 236, 255, .25);
+  border-radius: 14px;
+  padding: .45rem .8rem;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, .03) inset,
+    0 8px 22px rgba(9, 198, 249, .12);
+}
+
+.health button.link:hover {
+  filter: brightness(1.06);
+}
+
+/* 4) Terms / Privacy 降低強度 */
+.footer-links .link {
+  color: rgba(255, 255, 255, .55);
+  text-decoration: none;
+}
+
+.footer-links .link:hover {
+  color: var(--cd-link);
+  text-decoration: underline;
+}
