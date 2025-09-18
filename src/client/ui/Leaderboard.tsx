@@ -38,17 +38,25 @@ export default function Leaderboard({
         <thead>
           <tr>
             <th className="rank">#</th>
-            <th>User</th>
-            <th>Repos</th>
-            <th style={{ textAlign: 'right' }}>Score</th>
+            <th>USER</th>
+            <th>REPOS</th>
+            <th style={{ textAlign: 'right' }}>SCORE</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 && (
             <tr>
-              <td colSpan={4} style={{ opacity: .75, padding: '16px 8px' }}>
+              <td colSpan={4} style={{ opacity: .78, padding: '16px 8px' }}>
                 No entries yet. Draft your roster to take the lead.
-                {onGoDraft && <button className="link" onClick={onGoDraft} style={{ marginLeft: 8 }}>Go to Draft</button>}
+                {onGoDraft && (
+                  <button
+                    className="link"
+                    onClick={onGoDraft}
+                    style={{ marginLeft: 12, letterSpacing: 0.2 }}
+                  >
+                    Go to Draft
+                  </button>
+                )}
               </td>
             </tr>
           )}
@@ -78,9 +86,18 @@ export default function Leaderboard({
 }
 
 function formatWeekRange(weekStart?: string, weekEnd?: string, fallbackWeek?: string) {
+  // 如果都沒有，計算「本週一到週日（UTC）」做為保底
   let startISO = weekStart || fallbackWeek || '';
   let endISO = weekEnd || '';
-  if (!startISO) return '—';
+  if (!startISO) {
+    const now = new Date();
+    const day = now.getUTCDay();
+    const diff = (day + 6) % 7;
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    start.setUTCDate(start.getUTCDate() - diff);
+    const end = new Date(start); end.setUTCDate(end.getUTCDate() + 6);
+    return `${fmt(start)} \u2013 ${fmt(end)}`;
+  }
   const start = new Date(`${startISO}T00:00:00Z`);
   const end = endISO ? new Date(`${endISO}T00:00:00Z`) : (() => { const s = new Date(start); s.setUTCDate(s.getUTCDate() + 6); return s; })();
   return `${fmt(start)} \u2013 ${fmt(end)}`;

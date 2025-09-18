@@ -35,11 +35,23 @@ function weekEndFromWeekISO(weekISO: string): string {
   return end.toISOString().slice(0, 10);
 }
 
-// ---- GitHub integration (token via settings, fallback .env) ----
+// ---- Settings helpers ----
+async function getBoolSetting(name: string, envKey: string, def: boolean): Promise<boolean> {
+  // env 優先
+  if (process.env[envKey] != null) return process.env[envKey] === '1' || process.env[envKey] === 'true';
+  try {
+    const v = await settings.get(name);
+    if (typeof v === 'string') return v === '1' || v === 'true';
+    if (typeof v === 'boolean') return v;
+  } catch {}
+  return def;
+}
 async function getGitHubToken(): Promise<string> {
   try { return (await settings.get('githubToken')) || process.env.GITHUB_TOKEN || ''; }
   catch { return process.env.GITHUB_TOKEN || ''; }
 }
+
+// ---- GitHub (real path; 在 mock 或被擋時不會被呼叫) ----
 async function gh(path: string, query: Record<string, string | number> = {}): Promise<any> {
   const url = new URL(`https://api.github.com/${path}`);
   Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, String(v)));
@@ -82,10 +94,57 @@ async function getWeeklyStarDelta(repo: string, week: string): Promise<number> {
   return Math.max(0, now - base);
 }
 
+// ---- Mock scoring (當外域尚未開通時使用) ----
+function hashInt(s: string): number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function pseudo(s: string, maxInclusive: number): number {
+  return hashInt(s) % (maxInclusive + 1);
+}
+function mockStarDelta(repo: string, week: string) {
+  return Math.min(20, pseudo(`${repo}|${week}|stars`, 24)); // cap 20
+}
+function mockMergedPRs(repo: string, week: string) {
+  return pseudo(`${repo}|${week}|pr`, 3); // 0..3 → *5
+}
+function mockClosedIssues(repo: string, week: string) {
+  return pseudo(`${repo}|${week}|issue`, 4); // 0..4 → *2
+}
+function mockReleases(repo: string, week: string) {
+  return pseudo(`${repo}|${week}|rel`, 1); // 0..1 → *8
+}
+function mockNpmDelta(repo: string, week: string) {
+  return pseudo(`${repo}|${week}|npm`, 3); // 0..3 → /5k → +1 each
+}
+
+// ---- Score calculation (adapter: mock / real) ----
+const POINTS = { release: 8, mergedPR: 5, closedIssue: 2, starDelta: 1, npmPer5k: 1 };
 const CAP_PER_REPO = 20;
-async function scoreEntryByStars(entry: Entry, week: string): Promise<number> {
-  const deltas = await Promise.all(entry.repos.map((r) => getWeeklyStarDelta(r, week)));
-  return deltas.reduce((s, d) => s + Math.min(CAP_PER_REPO, d), 0);
+
+async function scoreEntry(entry: Entry, week: string): Promise<number> {
+  const useMock = await getBoolSetting('mockScoring', 'MOCK_SCORING', true);
+
+  if (useMock) {
+    let s = 0;
+    for (const r of entry.repos) {
+      s += mockReleases(r, week) * POINTS.release;
+      s += mockMergedPRs(r, week) * POINTS.mergedPR;
+      s += mockClosedIssues(r, week) * POINTS.closedIssue;
+      s += Math.min(CAP_PER_REPO, mockStarDelta(r, week)) * POINTS.starDelta;
+      s += mockNpmDelta(r, week) * POINTS.npmPer5k;
+    }
+    return s;
+  }
+
+  // Real path（目前只做 Star Δ；其餘先留 0）
+  const deltas = await Promise.all(entry.repos.map((r) => getWeeklyStarDelta(r, week).catch(() => 0)));
+  const starScore = deltas.reduce((sum, d) => sum + Math.min(CAP_PER_REPO, d), 0) * POINTS.starDelta;
+  return starScore; // TODO: releases / merged PR / closed issues / npm once allowlist passes
 }
 
 // ---- Storage helpers ----
@@ -102,19 +161,14 @@ async function loadEntriesForWeek(week: string): Promise<Entry[]> {
   return out;
 }
 
-// ---- User helper（不要用 context；用 reddit + header） ----
+// ---- User helper（不用 context；用 reddit + header） ----
 async function resolveCurrentUser(req?: Request): Promise<string> {
-  // 先試 header（Devvit Web 會在 webview/測試時帶過來）
   const h = req?.headers?.['x-reddit-username'];
   if (typeof h === 'string' && h) return h;
-
-  // 再試 SDK
   try {
     const username = await reddit.getCurrentUsername();
     if (username) return username;
-  } catch {
-    // ignore
-  }
+  } catch {}
   return 'anonymous';
 }
 
@@ -128,7 +182,7 @@ app.post('/api/roster/submit', async (req, res) => {
   try {
     const body = (req.body ?? {}) as { repos?: string[] };
 
-    // 清理/驗證成 RepoSlug（owner/repo）
+    // 清理/驗證 RepoSlug（owner/repo）
     const input = (body.repos ?? []) as string[];
     const cleaned: RepoSlug[] = [];
     const seen = new Set<string>();
@@ -161,7 +215,7 @@ app.get('/api/leaderboard', async (_req, res) => {
   try {
     const week = currentWeekISO();
     const entries = await loadEntriesForWeek(week);
-    const withScores = await Promise.all(entries.map(async e => ({ ...e, score: await scoreEntryByStars(e, week) })));
+    const withScores = await Promise.all(entries.map(async e => ({ ...e, score: await scoreEntry(e, week) })));
     withScores.sort((a, b) => b.score - a.score || a.user.localeCompare(b.user));
     const payload: LeaderboardPayload = {
       updatedAt: new Date().toISOString(),
@@ -173,28 +227,17 @@ app.get('/api/leaderboard', async (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.json(payload);
   } catch (e: any) {
-    res.status(500).json({ ok: false, error: e.message ?? String(e) });
-  }
-});
-
-app.get('/api/gh/stars', async (req, res) => {
-  try {
-    const repo = String(req.query.repo ?? '');
-    if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) return res.status(400).json({ ok: false, error: 'invalid repo' });
+    // 就算出錯也回週期，避免前端顯示 —
     const week = currentWeekISO();
-    const baseKey = starBaselineKey(week);
-    let baseline = await redis.hGet(baseKey, repo);
-    if (!baseline) {
-      const cur = await getStarsCached(repo);
-      baseline = String(cur);
-      await redis.hSet(baseKey, { [repo]: baseline });
-      await redis.expire(baseKey, 60 * 60 * 24 * 21);
-    }
-    const now = await getStarsCached(repo);
-    const delta = Math.max(0, now - Number(baseline));
-    res.json({ ok: true, repo, stars: now, baseline: Number(baseline), delta });
-  } catch (e: any) {
-    res.status(500).json({ ok: false, error: e.message ?? String(e) });
+    const payload: LeaderboardPayload = {
+      updatedAt: new Date().toISOString(),
+      week,
+      weekStart: week,
+      weekEnd: weekEndFromWeekISO(week),
+      entries: [],
+      error: e?.message ?? String(e),
+    } as any;
+    res.status(200).json(payload);
   }
 });
 
@@ -204,12 +247,14 @@ app.get('/api/health', async (_req, res) => {
     const key = leaderboardKey(week);
     const entries = await redis.hLen(key);
 
-    // 一次性 probe：確認可寫
     const probeKey = `code-derby:health:${Date.now()}`;
     await redis.hSet(probeKey, { ok: '1' });
     await redis.expire(probeKey, 60);
 
-    res.json({ ok: true, week, entries });
+    // 也回 mockScoring 狀態，方便前端 console 檢查
+    const mockScoring = await getBoolSetting('mockScoring', 'MOCK_SCORING', true);
+
+    res.json({ ok: true, week, entries, mockScoring });
   } catch (error) {
     res.status(500).json({ ok: false, error: error instanceof Error ? error.message : String(error) });
   }
