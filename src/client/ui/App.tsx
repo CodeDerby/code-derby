@@ -1,146 +1,119 @@
 // src/client/ui/App.tsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import Leaderboard from './Leaderboard';
 import Draft from './Draft';
-import Links from './Links';
-import Nav, { ViewKey } from './Nav';
+import Leaderboard from './Leaderboard';
+import About from './About';
 import type { Entry, LeaderboardPayload } from '../../shared/types';
 
-function getHashView(): ViewKey {
-  const h = (window.location.hash || '').replace('#', '').toLowerCase();
-  return (h === 'draft' || h === 'leaderboard' || h === 'about') ? (h as ViewKey) : 'leaderboard';
-}
-function sortEntries(entries: Entry[]): Entry[] {
-  return [...entries].sort((a, b) => b.score - a.score || a.user.localeCompare(b.user));
-}
-function nextMondayUTC(from = new Date()): Date {
-  const d = new Date(from);
-  const day = d.getUTCDay(); const diff = (8 - day) % 7 || 7;
-  const res = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  res.setUTCDate(res.getUTCDate() + diff);
-  return res;
-}
-function fmtCountdown(ms: number) {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
-  return `${d}d ${h}h ${m}m`;
-}
+type ViewKey = 'draft' | 'leaderboard' | 'about';
 
 export default function App() {
-  const [view, setView] = useState<ViewKey>(getHashView());
-  const [week, setWeek] = useState('');
-  const [weekStart, setWeekStart] = useState('');
-  const [weekEnd, setWeekEnd] = useState('');
-  const [updatedAt, setUpdatedAt] = useState<string | undefined>(undefined);
-  const [rows, setRows] = useState<Entry[]>([]);
+  const [view, setView] = useState<ViewKey>('leaderboard');
+  const [lb, setLb] = useState<LeaderboardPayload | null>(null);
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState('');
 
-  const showToast = (t: string) => { setToast(t); setTimeout(() => setToast(''), 1600); };
-
-  const loadLeaderboard = useCallback(async () => {
-    setLoading(true);
+  const refreshLeaderboard = useCallback(async () => {
     try {
-      const r = await fetch('/api/leaderboard', { headers: { 'cache-control': 'no-store' } });
-      const d: LeaderboardPayload = await r.json();
-      setWeek(d.week || '');
-      setWeekStart(d.weekStart || d.week || '');
-      setWeekEnd(d.weekEnd || '');
-      setUpdatedAt(d.updatedAt);
-      setRows(sortEntries(d.entries || []));
+      setLoading(true);
+      const r = await fetch('/api/leaderboard', { cache: 'no-store' });
+      const j: LeaderboardPayload = await r.json();
+      setLb(j);
     } catch (e) {
-      console.error('load leaderboard failed', e);
-      setRows([]);
-      setWeek(''); setWeekStart(''); setWeekEnd(''); setUpdatedAt(undefined);
+      console.error('leaderboard fetch failed', e);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadLeaderboard();
-    const onHash = () => setView(getHashView());
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
-  }, [loadLeaderboard]);
+    refreshLeaderboard();
+  }, [refreshLeaderboard]);
 
-  useEffect(() => { if (view === 'leaderboard') void loadLeaderboard(); }, [view, loadLeaderboard]);
-
-  useEffect(() => {
-    if (view !== 'leaderboard') return;
-    const id = setInterval(() => { if (!document.hidden) void loadLeaderboard(); }, 20000);
-    const onVis = () => { if (!document.hidden) void loadLeaderboard(); };
-    document.addEventListener('visibilitychange', onVis);
-    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
-  }, [view, loadLeaderboard]);
-
-  const handleRosterSubmit = useCallback(async (entry: Entry) => {
-    const res = await fetch('/api/roster/submit', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ repos: entry.repos })
-    });
-    const j = await res.json();
-    if (j.ok) {
-      showToast('Submitted ✓');
-      await loadLeaderboard();
-      setView('leaderboard'); window.location.hash = 'leaderboard';
-    } else {
-      showToast('Submit failed');
+  const onSubmit = useCallback(async (entry: Entry) => {
+    try {
+      const res = await fetch('/api/roster/submit', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ repos: entry.repos }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || `submit failed (${res.status})`);
+      }
+      await refreshLeaderboard();
+      setView('leaderboard');
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    } catch (e) {
+      console.error(e);
+      alert('Submit failed. Please try again.');
     }
-  }, [loadLeaderboard]);
+  }, [refreshLeaderboard]);
 
-  const [untilLock, setUntilLock] = useState('');
-  useEffect(() => {
-    const tick = () => setUntilLock(fmtCountdown(nextMondayUTC().getTime() - Date.now()));
-    tick(); const id = setInterval(tick, 60000); return () => clearInterval(id);
-  }, []);
-
-  const panels = useMemo(() => ({
-    draft: <Draft onSubmit={handleRosterSubmit} />,
-    leaderboard: loading && rows.length === 0
-      ? <div style={{ opacity: .7 }}>Loading leaderboard…</div>
-      : <Leaderboard
-          week={week}
-          weekStart={weekStart}
-          weekEnd={weekEnd}
-          rows={rows}
-          updatedAt={updatedAt}
-          onGoDraft={() => { setView('draft'); window.location.hash = 'draft'; }}
-        />,
-    about: (
-      <div>
-        <h2 style={{ marginTop: 0 }}>About</h2>
-        <p>Scoring: Release +8 · Merged PR +5 · Closed Issue +2 · Star Δ +1 (cap) · NPM Δ / 5k → +1.</p>
-        <p>For fun only. No gambling or redeemable prizes.</p>
-      </div>
-    ),
-  }), [handleRosterSubmit, loading, rows, week, weekStart, weekEnd, updatedAt]);
+  const tabs = useMemo(
+    () => ([
+      { k: 'draft', label: 'Draft' },
+      { k: 'leaderboard', label: 'Leaderboard' },
+      { k: 'about', label: 'About' },
+    ] as { k: ViewKey; label: string }[]),
+    []
+  );
 
   return (
     <div className="container">
-      <div className="hero">
-        <div className="hero-text">
-          <div className="hero-eyebrow">Fantasy OSS League</div>
-          <h1>Code Derby</h1>
-          <p className="hero-copy">Draft three GitHub repos, track their momentum, and win the weekly derby.</p>
-        </div>
-        <div className="hero-promo">
-          <span className="hero-note">Season Beta</span>
-          <span className="hero-note hero-note--secondary">Live leaderboard updates daily</span>
-          <span className="hero-note">Draft locks in {untilLock}</span>
+      {/* Hero */}
+      <div className="card hero">
+        <div className="eyebrow">FANTASY OSS LEAGUE</div>
+        <h1 className="title">Code Derby</h1>
+        <p className="sub">
+          Draft three GitHub repos, track their momentum, and win the weekly derby.
+        </p>
+        <div className="meta-row">
+          <span className="badge">SEASON BETA</span>
+          <span className="sep"> </span>
+          <span className="muted">LIVE LEADERBOARD UPDATES DAILY</span>
         </div>
       </div>
 
-      <section className="panel panel--tabs">
-        <Nav active={view} onChange={(v) => { setView(v); window.location.hash = v; }} />
-      </section>
+      {/* Tabs + Content in ONE card */}
+      <div className="card">
+        <div className="tabs">
+          {tabs.map(t => (
+            <button
+              key={t.k}
+              className={`tab ${view === t.k ? 'active' : ''}`}
+              onClick={() => setView(t.k as ViewKey)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-      <div className="card fade" hidden={view !== 'draft'}>{panels.draft}</div>
-      <div className="card fade" hidden={view !== 'leaderboard'}>{panels.leaderboard}</div>
-      <div className="card fade" hidden={view !== 'about'}>{panels.about}</div>
+        <div className="content">
+          {view === 'draft' && <Draft onSubmit={onSubmit} />}
 
-      <Links />
-      {toast && <div className={`toast ${toast ? 'show' : ''}`}>{toast}</div>}
+          {view === 'leaderboard' && (
+            <>
+              {loading && <div className="muted" style={{ marginBottom: 8 }}>Loading…</div>}
+              <Leaderboard
+                week={lb?.week ?? ''}
+                weekStart={lb?.weekStart}
+                weekEnd={lb?.weekEnd}
+                updatedAt={lb?.updatedAt}
+                rows={lb?.entries ?? []}
+                onGoDraft={() => setView('draft')}
+              />
+            </>
+          )}
+
+          {view === 'about' && <About />}
+        </div>
+      </div>
+
+      {/* Footer links */}
+      <div className="footer-links">
+        <a className="link" href="/terms" target="_blank" rel="noopener">Terms</a>
+        <a className="link" href="/privacy" target="_blank" rel="noopener">Privacy</a>
+      </div>
     </div>
   );
 }

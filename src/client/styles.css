@@ -502,3 +502,35 @@ button:hover {
     margin-top: 2px;
   }
 }
+
+/* ---- Code Derby overrides ---- */
+.card .tabs {
+  border-bottom: none !important;
+  /* 移除長底線 */
+}
+
+.card .tabs::after {
+  display: none !important;
+}
+
+.card .content {
+  padding-top: 12px;
+}
+
+/* 行動版 About / Health 區塊微調 */
+.health .row {
+  display: flex;
+  gap: .5rem;
+  margin-top: .25rem;
+  align-items: baseline;
+}
+
+.health .row span {
+  opacity: .8;
+  min-width: 64px;
+}
+
+.bullets {
+  margin: .25rem 0 .75rem;
+  padding-left: 1.25rem;
+}
