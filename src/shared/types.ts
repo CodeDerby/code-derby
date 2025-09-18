@@ -12,6 +12,7 @@ export interface LeaderboardPayload {
   weekStart?: string;   // optional explicit start ISO (UTC)
   weekEnd?: string;     // optional explicit end ISO (UTC)
   entries: Entry[];
+  updatedAt?: string;
 }
 
 export interface UserPayload {
