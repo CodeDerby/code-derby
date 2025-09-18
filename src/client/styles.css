@@ -534,3 +534,100 @@ button:hover {
   margin: .25rem 0 .75rem;
   padding-left: 1.25rem;
 }
+
+/* ===== Code Derby UI fixes (override) ===== */
+
+/* 色票（保守用量） */
+:root {
+  --cd-accent-1: #78ecff;
+  --cd-accent-2: #6f7cff;
+  --cd-link: #8cecff;
+  --cd-muted: rgba(255, 255, 255, .72);
+}
+
+/* 讓 Tabs 與內容是一張卡，移除「膠囊按鈕」外觀 */
+.card .tabs {
+  display: flex;
+  gap: 24px;
+  padding: 6px 0 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.card .tabs::after {
+  display: none !important;
+}
+
+/* 重置 tab 的按鈕樣式，恢復文字型分頁 */
+.card .tabs .tab {
+  appearance: none;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 8px 0 !important;
+  color: var(--cd-muted);
+  font-weight: 700;
+  position: relative;
+}
+
+.card .tabs .tab:hover {
+  color: #fff;
+}
+
+.card .tabs .tab.active {
+  color: #fff;
+}
+
+.card .tabs .tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -11px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--cd-accent-1), var(--cd-accent-2));
+}
+
+/* 讓 tabs 下的內容更緊貼一些（看起來同一張卡） */
+.card .content {
+  padding-top: 14px;
+}
+
+/* 表格／連結配色回到原本的高亮青色 */
+a,
+.link {
+  color: var(--cd-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a:hover,
+.link:hover {
+  opacity: .9;
+}
+
+/* Footer 兩個連結間距與置中 */
+.footer-links {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  padding: 16px 0 8px;
+}
+
+/* Leaderboard 欄位排版保守微調（避免字擠） */
+.lb-table .lb-user .truncate {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-table .repo {
+  line-height: 1.2;
+}
+
+/* 輸入框 placeholder 顏色更柔和 */
+input::placeholder {
+  color: rgba(255, 255, 255, .45);
+}
