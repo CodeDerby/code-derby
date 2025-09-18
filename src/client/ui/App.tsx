@@ -15,48 +15,48 @@ function sortEntries(entries: Entry[]): Entry[] {
 }
 function nextMondayUTC(from = new Date()): Date {
   const d = new Date(from);
-  const day = d.getUTCDay();          // 0 Sun..6 Sat
-  const diff = (8 - day) % 7 || 7;    // next Monday
+  const day = d.getUTCDay(); const diff = (8 - day) % 7 || 7;
   const res = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   res.setUTCDate(res.getUTCDate() + diff);
-  return res;                          // 00:00 UTC
+  return res;
 }
 function fmtCountdown(ms: number) {
   const s = Math.max(0, Math.floor(ms / 1000));
-  const d = Math.floor(s / 86400);
-  const h = Math.floor((s % 86400) / 3600);
-  const m = Math.floor((s % 3600) / 60);
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
   return `${d}d ${h}h ${m}m`;
 }
 
 export default function App() {
   const [view, setView] = useState<ViewKey>(getHashView());
   const [week, setWeek] = useState('');
+  const [weekStart, setWeekStart] = useState('');
+  const [weekEnd, setWeekEnd] = useState('');
+  const [updatedAt, setUpdatedAt] = useState<string | undefined>(undefined);
   const [rows, setRows] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState('');
 
-  function showToast(text: string) {
-    setToast(text);
-    setTimeout(() => setToast(''), 1600);
-  }
+  const showToast = (t: string) => { setToast(t); setTimeout(() => setToast(''), 1600); };
 
   const loadLeaderboard = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch('/api/leaderboard');
-      if (!r.ok) throw new Error('load leaderboard failed');
+      const r = await fetch('/api/leaderboard', { headers: { 'cache-control': 'no-store' } });
       const d: LeaderboardPayload = await r.json();
       setWeek(d.week || '');
+      setWeekStart(d.weekStart || d.week || '');
+      setWeekEnd(d.weekEnd || '');
+      setUpdatedAt(d.updatedAt);
       setRows(sortEntries(d.entries || []));
     } catch (e) {
-      console.error(e);
+      console.error('load leaderboard failed', e);
+      setRows([]);
+      setWeek(''); setWeekStart(''); setWeekEnd(''); setUpdatedAt(undefined);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // 初始載入 + 監聽 hash
   useEffect(() => {
     void loadLeaderboard();
     const onHash = () => setView(getHashView());
@@ -64,12 +64,8 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, [loadLeaderboard]);
 
-  // 切到排行榜時強制 refresh
-  useEffect(() => {
-    if (view === 'leaderboard') void loadLeaderboard();
-  }, [view, loadLeaderboard]);
+  useEffect(() => { if (view === 'leaderboard') void loadLeaderboard(); }, [view, loadLeaderboard]);
 
-  // 排行榜分頁背景 revalidate（每 20s、視窗回到前景）
   useEffect(() => {
     if (view !== 'leaderboard') return;
     const id = setInterval(() => { if (!document.hidden) void loadLeaderboard(); }, 20000);
@@ -78,25 +74,25 @@ export default function App() {
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
   }, [view, loadLeaderboard]);
 
-  // 草稿送出：樂觀更新 + 切頁 + Toast
   const handleRosterSubmit = useCallback(async (entry: Entry) => {
-    setRows(prev => {
-      const next = prev.filter(r => r.user !== entry.user); next.push(entry);
-      return sortEntries(next);
+    const res = await fetch('/api/roster/submit', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ repos: entry.repos })
     });
-    await loadLeaderboard();
-    showToast('Submitted ✓');
-    setView('leaderboard');
-    window.location.hash = 'leaderboard';
+    const j = await res.json();
+    if (j.ok) {
+      showToast('Submitted ✓');
+      await loadLeaderboard();
+      setView('leaderboard'); window.location.hash = 'leaderboard';
+    } else {
+      showToast('Submit failed');
+    }
   }, [loadLeaderboard]);
 
-  // hero 倒數（每分鐘）
   const [untilLock, setUntilLock] = useState('');
   useEffect(() => {
     const tick = () => setUntilLock(fmtCountdown(nextMondayUTC().getTime() - Date.now()));
-    tick();
-    const id = setInterval(tick, 60000);
-    return () => clearInterval(id);
+    tick(); const id = setInterval(tick, 60000); return () => clearInterval(id);
   }, []);
 
   const panels = useMemo(() => ({
@@ -105,8 +101,10 @@ export default function App() {
       ? <div style={{ opacity: .7 }}>Loading leaderboard…</div>
       : <Leaderboard
           week={week}
+          weekStart={weekStart}
+          weekEnd={weekEnd}
           rows={rows}
-          updatedAt={new Date().toISOString()}
+          updatedAt={updatedAt}
           onGoDraft={() => { setView('draft'); window.location.hash = 'draft'; }}
         />,
     about: (
@@ -114,12 +112,9 @@ export default function App() {
         <h2 style={{ marginTop: 0 }}>About</h2>
         <p>Scoring: Release +8 · Merged PR +5 · Closed Issue +2 · Star Δ +1 (cap) · NPM Δ / 5k → +1.</p>
         <p>For fun only. No gambling or redeemable prizes.</p>
-
-        {/* Health (可視化 /api/health) */}
-        <AboutHealth />
       </div>
     ),
-  }), [handleRosterSubmit, loading, rows, week]);
+  }), [handleRosterSubmit, loading, rows, week, weekStart, weekEnd, updatedAt]);
 
   return (
     <div className="container">
@@ -137,35 +132,15 @@ export default function App() {
       </div>
 
       <section className="panel panel--tabs">
-        <Nav
-          active={view}
-          onChange={(v) => { setView(v); window.location.hash = v; }}
-        />
+        <Nav active={view} onChange={(v) => { setView(v); window.location.hash = v; }} />
       </section>
 
-      {/* 一次只顯示一個（不吃樣式的原生 hidden） */}
       <div className="card fade" hidden={view !== 'draft'}>{panels.draft}</div>
       <div className="card fade" hidden={view !== 'leaderboard'}>{panels.leaderboard}</div>
       <div className="card fade" hidden={view !== 'about'}>{panels.about}</div>
 
       <Links />
       {toast && <div className={`toast ${toast ? 'show' : ''}`}>{toast}</div>}
-    </div>
-  );
-}
-
-/** About 分頁中的 Health 視覺化 */
-function AboutHealth() {
-  const [data, setData] = useState<{ok:boolean; week?: string; entries?: number} | null>(null);
-  useEffect(() => { fetch('/api/health').then(r=>r.json()).then(setData).catch(()=>{}); }, []);
-  return (
-    <div style={{ marginTop: 12, opacity: .9 }}>
-      <div style={{ fontWeight: 600, marginBottom: 4 }}>Health</div>
-      <div style={{ fontSize: 14 }}>
-        Status: {data?.ok ? 'OK' : 'Checking…'}{data?.ok === false ? ' (error)' : ''}
-        {data?.week ? <> · Week key: {data.week}</> : null}
-        {typeof data?.entries === 'number' ? <> · Entries: {data.entries}</> : null}
-      </div>
     </div>
   );
 }
