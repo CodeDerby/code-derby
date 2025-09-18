@@ -1,4 +1,4 @@
-# Code Derby — a Fantasy OSS League on Reddit (Devvit Web + React)
+# Code Derby - a Fantasy Open Source Software League
 
 [![CI](https://github.com/CodeDerby/code-derby/actions/workflows/ci.yml/badge.svg)](https://github.com/CodeDerby/code-derby/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
@@ -12,9 +12,9 @@ Code Derby is a weekly, social game that runs *inside a Reddit post* via **Devvi
 
 ## Quick links
 
-- **App listing:** `https://developers.reddit.com/apps/codederby`
-- **Demo post:** `https://www.reddit.com/r/codederby_dev/comments/1nj89dz/code_derby`
-- **Developers:** `u/Sofus_Deng`
+- **App listing:** [https://developers.reddit.com/apps/codederby](https://developers.reddit.com/apps/codederby)
+- **Demo post:** [https://www.reddit.com/r/codederby_dev/comments/1nj89dz/code_derby](https://www.reddit.com/r/codederby_dev/comments/1nj89dz/code_derby)
+- **Developers:** [u/Sofus_Deng](https://www.reddit.com/user/Sofus_Deng)
 
 ## How to play
 
