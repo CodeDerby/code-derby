@@ -909,3 +909,36 @@ input::placeholder {
   color: var(--cd-link);
   text-decoration: underline;
 }
+
+/* ==== Hero tweaks: mobile meta in one line, desktop title left ==== */
+
+/* Mobile ≤ 480px：讓 LIVE... 不換行（並稍微縮小字級） */
+@media (max-width: 480px) {
+  .card.hero .meta-row {
+    gap: 6px 10px;
+  }
+
+  .card.hero .meta-row .muted {
+    display: inline !important;
+    flex-basis: auto !important;
+    white-space: nowrap;
+    font-size: 12.5px;
+    /* 視需要可調 12~13px */
+    letter-spacing: .02em;
+  }
+}
+
+/* Desktop ≥ 768px：標題靠左（防止任何右對齊/置中設定） */
+@media (min-width: 768px) {
+  .card.hero {
+    text-align: left !important;
+  }
+
+  .card.hero .title {
+    text-align: left !important;
+    margin-left: 0 !important;
+    align-self: flex-start !important;
+    /* 若父層是 flex/grid */
+    justify-self: start !important;
+  }
+}
