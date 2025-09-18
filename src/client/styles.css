@@ -942,3 +942,10 @@ input::placeholder {
     justify-self: start !important;
   }
 }
+
+.card.hero .eyebrow,
+.card.hero .title,
+.card.hero .sub,
+.card.hero .meta-row {
+  width: 100%;
+}
