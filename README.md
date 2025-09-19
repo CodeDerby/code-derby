@@ -1,4 +1,4 @@
-# Code Derby - a Fantasy Open Source Software League
+# Code Derby - A Fantasy Open Source Software League
 
 [![CI](https://github.com/CodeDerby/code-derby/actions/workflows/ci.yml/badge.svg)](https://github.com/CodeDerby/code-derby/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
@@ -8,61 +8,63 @@
 
 **Pick 3 GitHub repositories. Watch them rise. Win the week.**
 
-Code Derby is a weekly, social game that runs *inside a Reddit post* via **Devvit Web**. Players draft three GitHub repositories (`owner/repo`). Each week (UTC Monday → Sunday) real project momentum is turned into points and a live leaderboard.
+Code Derby is a weekly, social game that runs *inside a Reddit post* via **Devvit Web**. Players draft three GitHub repositories (`owner/repo`). Each week (UTC **Mon–Sun**), real project activity turns into points on a live leaderboard.
 
-## Quick links
+## Quick Links
 
-- **App listing:** [https://developers.reddit.com/apps/codederby](https://developers.reddit.com/apps/codederby)
-- **Demo post:** [https://www.reddit.com/r/codederby_dev/comments/1nj89dz/code_derby](https://www.reddit.com/r/codederby_dev/comments/1nj89dz/code_derby)
+- **App listing:** <https://developers.reddit.com/apps/codederby>
+- **Demo post:** <https://www.reddit.com/r/codederby_dev/comments/1nj89dz/code_derby>
 - **Developers:** [u/Sofus_Deng](https://www.reddit.com/user/Sofus_Deng)
 
-## How to play
+## How to Play 🎮
 
-1. Open the **demo Reddit post** (desktop web or the official app on mobile).  
+1. Open the **demo Reddit post** (desktop web or the official Reddit app).  
 2. Go to **Draft**, enter **three** repos in `owner/repo` format, and submit.  
-3. The app shows a toast and switches to **Leaderboard**. Your entry appears instantly.  
+3. You’ll see a toast and the app switches to **Leaderboard**—your entry appears instantly.  
 4. The leaderboard updates during the week and shows the UTC **week range**.  
-5. In **About → Health** you can see server status (mock/real), current week, and entry count.
+5. In **About → Health**, see server status (mock/real), current week, and entry count.
 
-## Scoring rules
+No install required; it’s *just a Reddit post*.
+
+## Scoring Rules 🧮
 
 ### Season Beta (current, shipped)
 
-We ship with a deterministic **Mock Scoring** mode so the app is fully reviewable while domain allowlists for GitHub/npm are pending.
+To keep the experience fully reviewable while external allowlists (GitHub/npm) are pending, the app ships with a deterministic **Mock Scoring** mode.
 
 - **Release**: +8  
 - **Merged PR**: +5  
 - **Closed Issue**: +2  
 - **Star Δ**: +1 per star gained (cap **20** / repo / week)  
-- **NPM Δ / 5k**: +1 per 5,000 downloads gained
+- **npm Δ / 5k**: +1 per 5,000 downloads gained
 
 Mock mode uses reproducible values based on `repo + week`, so demos are stable and comparable.
 
 ### Full / Real mode (after allowlist approval)
 
-- GitHub: Releases, merged PRs, closed issues, star delta (with weekly baselines retained for **21 days**).
+- GitHub: releases, merged PRs, closed issues, star delta (with weekly baselines retained for **21 days**).  
 - npm: weekly download delta (smoothed; +1 per 5,000).  
-- Redis-backed caches for fast reads and rate‑limit safety.
+- Redis‑backed caches for fast reads and rate‑limit safety.
 
-**Fair-play note:** No gambling or redeemable prizes. Anti‑gaming heuristics (rate limits, duplicate checks) on the roadmap.
+**Fair‑play note:** No gambling or redeemable prizes. Anti‑gaming heuristics (rate limits, duplicate checks) are on the roadmap.
 
-## Screens & UX details
+## Screens & UX Details ✨
 
-- **Draft**: empty inputs with placeholders; `Enter` submits; on success we **clear inputs**, show a **toast**, and switch to **Leaderboard**.
-- **Leaderboard**: clearly labeled UTC week (Mon–Sun); empty state nudges to “Go to Draft”; auto-refresh every ~20s (and on tab switch).
-- **About**: rules + **Health** panel with a one-click *Refresh* (shows `{ ok, week, mockScoring, entries }`).
-- **Design**: modern tech style—gradient hero, text tabs, glass buttons, accessible contrast, mobile-first with smooth fallbacks.
+- **Draft**: empty inputs with helpful placeholders; `Enter` submits; on success we **clear inputs**, show a **toast**, and switch to **Leaderboard**.  
+- **Leaderboard**: clearly labeled UTC week (Mon–Sun); empty state nudges to “Go to Draft”; auto‑refreshes ~every 20s (and on tab switch).  
+- **About**: rules + a **Health** panel with one‑click *Refresh* (shows `{ ok, week, mockScoring, entries }`).  
+- **Design**: modern/tech style—gradient hero, text tabs, glass buttons, accessible contrast, mobile‑first with smooth fallbacks.
 
-## Tech stack
+## Tech Stack 🧱
 
-- **Devvit Web** (WebView + server runtime)
-- **Frontend**: React + TypeScript, Vite, custom CSS (dark/tech theme)
-- **Server**: Express on Devvit Web Server
+- **Devvit Web** (WebView + server runtime)  
+- **Frontend**: React + TypeScript, Vite, custom CSS (dark/tech theme)  
+- **Server**: Express on Devvit Web Server  
 - **Storage**: Devvit **Redis** (weekly entries, baselines, short‑lived metrics caches)
 
-## Repository structure
+## Repository Structure
 
-```bash
+```txt
 src/
 ├─ client/                 # React app (WebView UI)
 │  ├─ ui/
@@ -77,14 +79,14 @@ src/
    └─ types.ts
 ```
 
-## API
+## API 🔌
 
 All routes are served by the Devvit Web server.
 
-- `GET /api/user` → `{ user: string }`
+- `GET /api/user` → `{ "user": string }`
 - `POST /api/roster/submit`  
-  **body:** `{ repos: string[3] }` (`owner/repo` each)  
-  **returns:** `{ ok: true, user: string }`
+  **body:** `{ "repos": string[3] }` (`owner/repo` each)  
+  **returns:** `{ "ok": true, "user": string }`
 - `GET /api/leaderboard` →
 
   ```json
@@ -99,25 +101,26 @@ All routes are served by the Devvit Web server.
   }
   ```
 
-- `GET /api/health` → `{ ok: boolean, week: string, entries: number, mockScoring: boolean }`
-- (diagnostic) `GET /api/gh/stars?repo=owner/repo` → `{ stars: number }` (real mode)
-- All leaderboard responses set `Cache-Control: no-store` to avoid stale data in WebView caches.
+- `GET /api/health` → `{ "ok": boolean, "week": string, "entries": number, "mockScoring": boolean }`
+- (diagnostic) `GET /api/gh/stars?repo=owner/repo` → `{ "stars": number }` (real mode)
 
-## Settings & environment
+> Leaderboard responses set `Cache-Control: no-store` to avoid stale data in the WebView.
 
-Both **Devvit Settings** and `.env` are supported.
+## Settings & Environment ⚙️
+
+Use either **Devvit Settings** or a local `.env`.
 
 - **Mock Scoring (default ON)**
   - Devvit Settings: `mockScoring = "true" | "false"`
   - `.env`:
-
+  
     ```bash
     MOCK_SCORING=1   # 1/true to enable, 0/false to disable
     ```
 
 - **GitHub Token** (used in *Real* mode)
   - Devvit Settings:
-
+  
     ```bash
     npx devvit settings set githubToken
     ```
@@ -128,34 +131,32 @@ Both **Devvit Settings** and `.env` are supported.
     GITHUB_TOKEN=ghp_xxx...
     ```
 
-> Ensure `devvit.json` includes:
->
-> ```json
-> "settings": {
->   "global": {
->     "githubToken": { "type": "string", "label": "GitHub Token", "isSecret": true, "defaultValue": "" },
->     "mockScoring": { "type": "string", "label": "Mock Scoring (true/false)", "isSecret": false, "defaultValue": "true" }
->   }
-> }
-> ```
+Ensure `devvit.json` includes:
 
----
+```json
+"settings": {
+  "global": {
+    "githubToken": { "type": "string", "label": "GitHub Token", "isSecret": true, "defaultValue": "" },
+    "mockScoring": { "type": "string", "label": "Mock Scoring (true/false)", "isSecret": false, "defaultValue": "true" }
+  }
+}
+```
 
-## Getting started (local / playtest)
+## Getting Started (local / playtest) 🚀
 
 ```bash
 npm install
-npm run dev     # concurrently builds client + server and deploys to Devvit playtest
+npm run dev     # builds client + server and deploys to Devvit playtest
 ```
 
 Then open your test subreddit and refresh the post (or use the UI simulator) to see changes.
 
-**Notes**
+**Notes**  
 
-- Requires **New Reddit** (and the official mobile app). Old Reddit does not render interactive posts.
-- External domains (e.g., `api.github.com`, `registry.npmjs.org`) need allowlist approval in the Dev Portal. Use **Mock Scoring** until approved.
+- Requires **New Reddit** (and the official mobile app). *Old Reddit* doesn’t render interactive posts.  
+- External domains (e.g., `api.github.com`, `registry.npmjs.org`) need allowlist approval in the Dev Portal. Keep **Mock Scoring** ON until approved.
 
-## License & contributing
+## License & Contributing 🤝
 
-- License: **AGPL‑3.0** (see `LICENSE`)
+- License: **AGPL‑3.0** (see `LICENSE`)  
 - Contributions welcome! See `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `SUPPORT.md`.
